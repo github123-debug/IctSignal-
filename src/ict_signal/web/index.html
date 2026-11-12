@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>ICT Signal Monitor</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/vendor/lucide.min.js" defer></script>
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主导航">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true"><i data-lucide="scan-line"></i></div>
+          <div class="brand-copy">
+            <strong>ICT SIGNAL</strong>
+            <span>Market monitor</span>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <button class="nav-item is-active" data-view="overview" type="button">
+            <i data-lucide="layout-dashboard"></i><span>总览</span>
+          </button>
+          <button class="nav-item" data-view="contracts" type="button">
+            <i data-lucide="list-filter"></i><span>合约</span>
+          </button>
+          <button class="nav-item" data-view="signals" type="button">
+            <i data-lucide="radio-tower"></i><span>信号</span>
+          </button>
+          <button class="nav-item" data-view="logs" type="button">
+            <i data-lucide="terminal-square"></i><span>日志</span>
+          </button>
+          <button class="nav-item" data-view="config" type="button">
+            <i data-lucide="sliders-horizontal"></i><span>配置</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <span class="source-dot"></span>
+          <div><span>行情源</span><strong id="sidebarSource">Gate</strong></div>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="breadcrumb">ICT SIGNAL / <span id="breadcrumbLabel">总览</span></p>
+            <h1 id="pageTitle">市场监控</h1>
+          </div>
+          <div class="topbar-actions">
+            <div class="sync-copy"><span>最后同步</span><strong id="syncTime">--</strong></div>
+            <span class="process-status is-loading" id="processBadge">
+              <span class="status-dot"></span><span>连接中</span>
+            </span>
+            <button class="icon-button" id="refreshButton" type="button" title="刷新数据" aria-label="刷新数据">
+              <i data-lucide="refresh-cw"></i>
+            </button>
+          </div>
+        </header>
+
+        <main class="main-content">
+          <section class="view is-active" id="view-overview" data-title="市场监控" data-label="总览">
+            <div class="metric-band" aria-label="运行摘要">
+              <div class="metric-cell">
+                <span>扫描合约</span>
+                <strong id="metricContracts">--</strong>
+                <small id="metricUniverse">成交额筛选</small>
+              </div>
+              <div class="metric-cell">
+                <span>活跃序列</span>
+                <strong id="metricActive">--</strong>
+                <small>触及或 BOS 已确认</small>
+              </div>
+              <div class="metric-cell">
+                <span>今日信号</span>
+                <strong id="metricToday">--</strong>
+                <small id="metricTotal">累计 --</small>
+              </div>
+              <div class="metric-cell">
+                <span>Telegram</span>
+                <strong class="metric-word" id="metricTelegram">--</strong>
+                <small>信号推送通道</small>
+              </div>
+            </div>
+
+            <div class="system-strip" id="systemStrip">
+              <div class="system-copy">
+                <span class="system-icon"><i data-lucide="activity"></i></span>
+                <div>
+                  <strong id="systemTitle">正在读取扫描器状态</strong>
+                  <span id="systemMeta">--</span>
+                </div>
+              </div>
+              <div class="command-group" aria-label="扫描器控制">
+                <button class="command-button is-primary" id="startScanner" type="button">
+                  <i data-lucide="play"></i><span>启动</span>
+                </button>
+                <button class="command-button" id="restartScanner" type="button">
+                  <i data-lucide="rotate-cw"></i><span>重启</span>
+                </button>
+                <button class="command-button is-danger" id="stopScanner" type="button">
+                  <i data-lucide="square"></i><span>停止</span>
+                </button>
+                <button class="command-button" id="testTelegram" type="button" title="发送一条 Telegram 测试消息" aria-label="发送 Telegram 测试消息">
+                  <i data-lucide="send"></i><span>测试 TG</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="overview-grid">
+              <section class="panel pipeline-panel">
+                <div class="section-heading">
+                  <div><span class="eyebrow">STATE MACHINE</span><h2>信号管线</h2></div>
+                  <span class="quiet-value" id="pipelineTotal">0 个合约</span>
+                </div>
+                <div class="pipeline" id="pipelineChart">
+                  <div class="pipeline-step">
+                    <div class="pipeline-label"><span>等待条件</span><strong id="countIdle">0</strong></div>
+                    <div class="bar-track"><span class="bar-fill state-idle" id="barIdle"></span></div>
+                  </div>
+                  <div class="pipeline-step">
+                    <div class="pipeline-label"><span>流动性触及</span><strong id="countTouched">0</strong></div>
+                    <div class="bar-track"><span class="bar-fill state-touched" id="barTouched"></span></div>
+                  </div>
+                  <div class="pipeline-step">
+                    <div class="pipeline-label"><span>BOS 已确认</span><strong id="countBos">0</strong></div>
+                    <div class="bar-track"><span class="bar-fill state-bos" id="barBos"></span></div>
+                  </div>
+                  <div class="pipeline-step">
+                    <div class="pipeline-label"><span>冷却中</span><strong id="countCooldown">0</strong></div>
+                    <div class="bar-track"><span class="bar-fill state-cooldown" id="barCooldown"></span></div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel activity-panel">
+                <div class="section-heading">
+                  <div><span class="eyebrow">ACTIVITY</span><h2>信号活动</h2></div>
+                  <span class="quiet-value">最近 14 天</span>
+                </div>
+                <div class="activity-chart" id="activityChart" aria-label="最近十四天信号数量"></div>
+              </section>
+            </div>
+
+            <section class="table-section">
+              <div class="section-heading">
+                <div><span class="eyebrow">LIVE SEQUENCES</span><h2>当前扫描状态</h2></div>
+                <button class="text-button" data-view-jump="contracts" type="button">查看全部 <i data-lucide="arrow-right"></i></button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>合约</th><th>当前价格</th><th>24H</th><th>状态</th><th>关键流动性</th><th>FVG</th><th>最后更新</th></tr></thead>
+                  <tbody id="overviewStatesBody"></tbody>
+                </table>
+                <div class="empty-state is-hidden" id="overviewStatesEmpty"><i data-lucide="radar"></i><strong>暂无扫描状态</strong></div>
+              </div>
+            </section>
+
+            <section class="table-section">
+              <div class="section-heading">
+                <div><span class="eyebrow">RECENT SIGNALS</span><h2>最近信号</h2></div>
+                <button class="text-button" data-view-jump="signals" type="button">信号历史 <i data-lucide="arrow-right"></i></button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>时间</th><th>合约</th><th>方向</th><th>流动性</th><th>价格</th><th>推送</th></tr></thead>
+                  <tbody id="overviewSignalsBody"></tbody>
+                </table>
+                <div class="empty-state is-hidden" id="overviewSignalsEmpty"><i data-lucide="radio"></i><strong>尚未产生信号</strong></div>
+              </div>
+            </section>
+          </section>
+
+          <section class="view" id="view-contracts" data-title="合约状态" data-label="合约">
+            <div class="view-toolbar">
+              <div class="search-field">
+                <i data-lucide="search"></i>
+                <input id="contractSearch" type="search" placeholder="搜索合约" autocomplete="off">
+              </div>
+              <div class="segmented-control" id="stateFilters" aria-label="状态筛选">
+                <button class="is-active" data-filter="ALL" type="button">全部</button>
+                <button data-filter="ACTIVE" type="button">活跃</button>
+                <button data-filter="IDLE" type="button">等待</button>
+                <button data-filter="COOLDOWN" type="button">冷却</button>
+              </div>
+              <span class="toolbar-count" id="contractCount">0 个合约</span>
+            </div>
+            <div class="table-wrap large-table">
+              <table>
+                <thead><tr><th>合约</th><th>当前价格</th><th>24H</th><th>24H 成交额</th><th>状态</th><th>流动性</th><th>日内区间</th><th>更新</th></tr></thead>
+                <tbody id="contractsBody"></tbody>
+              </table>
+              <div class="empty-state is-hidden" id="contractsEmpty"><i data-lucide="search-x"></i><strong>没有匹配的合约</strong></div>
+            </div>
+          </section>
+
+          <section class="view" id="view-signals" data-title="信号历史" data-label="信号">
+            <div class="signal-summary">
+              <div><span>全部信号</span><strong id="signalTotal">0</strong></div>
+              <div><span>LONG</span><strong class="positive" id="signalLong">0</strong></div>
+              <div><span>SHORT</span><strong class="negative" id="signalShort">0</strong></div>
+              <div><span>已推送</span><strong id="signalSent">0</strong></div>
+            </div>
+            <div class="view-toolbar">
+              <div class="search-field">
+                <i data-lucide="search"></i>
+                <input id="signalSearch" type="search" placeholder="搜索合约或流动性" autocomplete="off">
+              </div>
+              <div class="segmented-control" id="directionFilters" aria-label="方向筛选">
+                <button class="is-active" data-filter="ALL" type="button">全部</button>
+                <button data-filter="LONG" type="button">LONG</button>
+                <button data-filter="SHORT" type="button">SHORT</button>
+              </div>
+            </div>
+            <div class="table-wrap large-table">
+              <table>
+                <thead><tr><th>信号时间</th><th>合约</th><th>方向</th><th>流动性</th><th>FVG</th><th>价格</th><th>推送状态</th></tr></thead>
+                <tbody id="signalsBody"></tbody>
+              </table>
+              <div class="empty-state is-hidden" id="signalsEmpty"><i data-lucide="radio-tower"></i><strong>尚未产生 ICT 信号</strong></div>
+            </div>
+          </section>
+
+          <section class="view" id="view-logs" data-title="运行日志" data-label="日志">
+            <div class="view-toolbar">
+              <div class="segmented-control" id="logFilters" aria-label="日志筛选">
+                <button class="is-active" data-filter="ALL" type="button">全部</button>
+                <button data-filter="INFO" type="button">INFO</button>
+                <button data-filter="WARNING" type="button">WARNING</button>
+                <button data-filter="ERROR" type="button">ERROR</button>
+              </div>
+              <div class="toolbar-actions">
+                <label class="toggle-control"><input id="logAutoScroll" type="checkbox" checked><span></span>自动滚动</label>
+                <button class="icon-button" id="refreshLogs" type="button" title="刷新日志" aria-label="刷新日志"><i data-lucide="refresh-cw"></i></button>
+              </div>
+            </div>
+            <div class="log-console" id="logConsole" aria-live="polite"></div>
+          </section>
+
+          <section class="view" id="view-config" data-title="运行配置" data-label="配置">
+            <div class="config-header">
+              <div><span class="eyebrow">RUNTIME CONFIGURATION</span><h2>策略参数</h2></div>
+              <span class="config-source"><i data-lucide="file-lock-2"></i> 敏感字段已隐藏</span>
+            </div>
+            <div class="config-grid" id="configGrid"></div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <dialog class="detail-dialog" id="contractDialog">
+      <div class="dialog-header">
+        <div><span class="eyebrow">CONTRACT DETAIL</span><h2 id="dialogSymbol">--</h2></div>
+        <button class="icon-button" data-dialog-close type="button" title="关闭" aria-label="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="dialog-body" id="contractDialogBody"></div>
+    </dialog>
+
+    <dialog class="detail-dialog signal-dialog" id="signalDialog">
+      <div class="dialog-header">
+        <div><span class="eyebrow">SIGNAL DETAIL</span><h2 id="signalDialogTitle">--</h2></div>
+        <button class="icon-button" data-dialog-close type="button" title="关闭" aria-label="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <pre class="signal-message" id="signalMessage"></pre>
+    </dialog>
+
+    <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+  </body>
+</html>
